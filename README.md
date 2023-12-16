@@ -41,3 +41,9 @@ Enter Name and Description.
 ```
 ./ContaboApi.sh snapshot delete
 ```
+
+### Rollback from snapshot
+```
+./ContaboApi.sh snapshot rollback
+```
+

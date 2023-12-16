@@ -145,6 +145,48 @@ FUNC_DEL_SNAPSHOT(){
     fi
 }
 
+FUNC_ROLL_SNAPSHOT(){
+    # Check snapshot
+    FUNC_LIST_SNAPSHOT;
+    if [ "${SNAPSHOT_LIST}" != "" ]; then
+        SNAPSHOT_ID=$(echo $SNAPSHOT_LIST | jq -r '.snapshotId')
+        echo -e "${GREEN}"
+        echo "[Current Snapshot]---------------------------------"
+        echo "snapshotId     : ${SNAPSHOT_ID}"
+        echo "name           : $(echo $SNAPSHOT_LIST | jq -r '.name')"
+        echo "description    : $(echo $SNAPSHOT_LIST | jq -r '.description')"
+        echo "createdDate    : $(echo $SNAPSHOT_LIST | jq -r '.createdDate')"
+        echo "autoDeleteDate : $(echo $SNAPSHOT_LIST | jq -r '.autoDeleteDate')"
+        echo "---------------------------------------------------"
+        echo -e "${RED}"
+        while true; do
+            read -p "Are you sure you want to rollback from the current snapshot? (Y/N) " _input
+            case $_input in
+                [Yy][Ee][Ss]|[Yy]* ) 
+                    UUID=$(uuidgen)
+                    echo -e "${NC}"
+                    SNAPSHOT=$(curl -s -X POST "https://api.contabo.com/v1/compute/instances/${INSTANCE_ID}/snapshots/${SNAPSHOT_ID}/rollback" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "x-request-id: ${UUID}" -H 'x-trace-id: 123213')
+                    if [ "$SNAPSHOT" != "" ]; then
+                        ERROR=$(echo $SNAPSHOT | jq '.statusCode')" : "$(echo $SNAPSHOT | jq -r '.message')
+                        echo -e "${RED}Failed to rollback from snapshot.(${ERROR})${NC}"
+                        exit 0
+                    fi
+                    echo -e "${GREEN}Rollback from snapshot.${NC}"
+                    break
+                    ;;
+                [Nn][Oo]|[Nn]* )
+                    echo -e "${GREEN}Rollback canceled.${NC}"
+                    break
+                    ;;
+                * ) echo "Please answer (y)es or (n)o.";;
+            esac
+        done
+        echo -e "${NC}"
+    else
+        echo -e "${GREEN}There are no snapshots.${NC}"
+    fi
+}
+
 case "$1" in
     status)
         FUNC_INFO
@@ -157,6 +199,9 @@ case "$1" in
             delete)
                 FUNC_DEL_SNAPSHOT
                 ;;
+            rollback)
+                FUNC_ROLL_SNAPSHOT
+                ;;
             *)
                 echo
                 echo "Usage: $0 $1 {function}"
@@ -167,6 +212,7 @@ case "$1" in
                 echo
                 echo "    create       == Create a new snapshot of the logged in VPS."
                 echo "    delete       == Delete the snapshot of the logged in VPS."
+                echo "    rollback     == Rollback instance to a specific snapshot."
                 echo
         esac
         ;;
@@ -182,6 +228,7 @@ case "$1" in
         echo "    status                 == Display status about logged in VPS."
         echo "    snapshot create        == Create a new snapshot of the logged in VPS."
         echo "    snapshot delete        == Delete the snapshot of the logged in VPS."
+        echo "    snapshot rollback      == Rollback instance to a specific snapshot."
         echo
 
 esac
