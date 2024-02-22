@@ -13,9 +13,7 @@ sudo apt install jq
 
 ## git clone
 ```
-sudo apt install jq
-```
-```
+git clone https://github.com/AoiToSouma/contabo_api.git
 cd contabo_api
 chmod +x *.sh
 ```
